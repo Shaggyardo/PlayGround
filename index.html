@@ -14,14 +14,14 @@
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
-  <main class="game-shell">
+  <main class="game-shell awaiting-class" id="gameShell">
     <header class="topbar">
       <a class="brand" href="#" aria-label="Inicio: El Camino Negro" id="brandHome"><span class="brand-mark">✦</span><span>EL CAMINO NEGRO</span></a>
-      <div class="chapter-indicator"><span class="chapter-kicker">UNA HISTORIA DEL REINO MALDITO</span><span id="chapterLabel">PROLOGUE · THE LAST MILE</span></div>
+      <div class="chapter-indicator"><span class="chapter-kicker">UNA HISTORIA DEL REINO MALDITO</span><span id="chapterLabel">PRÓLOGO · LA ÚLTIMA MILLA</span></div>
       <button class="sound-toggle" id="soundToggle" aria-label="Activar sonido ambiental" title="Sonido ambiental">♫ <span>Sonido apagado</span></button>
     </header>
 
-    <section class="status-row" aria-label="Estado de la mercenaria">
+    <section class="status-row" aria-label="Estado del personaje">
       <div class="status-card gold-status"><div class="status-symbol">◈</div><div class="status-copy"><span class="status-name">ORO</span><strong id="goldValue">12</strong></div><div class="status-delta" id="goldDelta"></div></div>
       <div class="status-card health-status"><div class="status-symbol">♥</div><div class="status-copy"><span class="status-name">VIDA</span><strong id="healthValue">8</strong></div><div class="status-meter"><i id="healthMeter"></i></div><div class="status-delta" id="healthDelta"></div></div>
       <div class="status-card sanity-status"><div class="status-symbol">◉</div><div class="status-copy"><span class="status-name">CORDURA</span><strong id="sanityValue">7</strong></div><div class="status-meter"><i id="sanityMeter"></i></div><div class="status-delta" id="sanityDelta"></div></div>
@@ -53,6 +53,7 @@
             <button class="choice choice-left" id="choiceLeft"><span class="choice-key">←</span><span class="choice-body"><span class="choice-action" id="leftAction">Tomar la carta</span><span class="choice-detail" id="leftDetail">El último deseo de un moribundo podría abrirte camino.</span><span class="choice-cost" id="leftCost"><b>+3</b> ORO <i>·</i> <b>−1</b> CORDURA</span></span><span class="choice-arrow">↗</span></button>
             <button class="choice choice-right" id="choiceRight"><span class="choice-key">→</span><span class="choice-body"><span class="choice-action" id="rightAction">Dejarlo a los cuervos</span><span class="choice-detail" id="rightDetail">Mantén las manos limpias. Sigue adelante.</span><span class="choice-cost" id="rightCost"><b>+1</b> VIDA <i>·</i> <b>−2</b> ORO</span></span><span class="choice-arrow">↗</span></button>
           </div>
+          <p class="roll-result" id="rollResult" aria-live="polite"></p>
         </div>
       </article>
       <div class="side-note right-note"><span class="note-rule"></span><span>NINGÚN CAMINO<br>LLEVA A CASA</span></div>
@@ -64,13 +65,20 @@
     </footer>
   </main>
 
+  <div class="class-backdrop" id="classBackdrop">
+    <section class="class-panel" role="dialog" aria-modal="true" aria-labelledby="classTitle">
+      <span class="eyebrow">EL CAMINO EXIGE UN PRECIO</span><h1 id="classTitle">¿Quién desafiará a la reina?</h1>
+      <p>Elige tu oficio. Cada clase comienza con recursos distintos y una habilidad única.</p>
+      <div class="class-options" id="classOptions"></div>
+    </section>
+  </div>
   <div class="combat-backdrop hidden" id="combatBackdrop">
     <section class="combat-panel" role="dialog" aria-modal="true" aria-labelledby="combatTitle">
       <span class="eyebrow">ENCUENTRO</span><h2 id="combatTitle">El guardián del puente</h2>
       <p class="combat-description" id="combatDescription"></p>
       <div class="combat-bars"><div><span>TÚ</span><b id="combatPlayerValue">8 / 8</b><div class="combat-meter"><i id="combatPlayerMeter"></i></div></div><div><span>ENEMIGO</span><b id="combatEnemyValue">8 / 8</b><div class="combat-meter enemy-meter"><i id="combatEnemyMeter"></i></div></div></div>
       <div class="combat-log" id="combatLog" aria-live="polite"></div>
-      <div class="combat-actions"><button id="attackButton">ATACAR</button><button id="guardButton">DEFENDERSE</button><button id="combatPotionButton">USAR POCIÓN</button><button id="fleeButton">HUIR</button></div>
+      <div class="combat-actions"><button id="attackButton">ATACAR</button><button id="abilityButton">HABILIDAD</button><button id="guardButton">DEFENDERSE</button><button id="combatPotionButton">USAR POCIÓN</button><button id="fleeButton">HUIR</button></div>
     </section>
   </div>
   <div class="shop-backdrop hidden" id="shopBackdrop">
@@ -90,7 +98,7 @@
       <button class="restart-button" id="restartButton">RECORRER EL CAMINO OTRA VEZ <span>↗</span></button>
     </section>
   </div>
-  <aside class="notes-drawer" id="notesDrawer" aria-hidden="true"><div class="drawer-head"><div><span class="eyebrow">LO QUE GUARDA LA OSCURIDAD</span><h2>Notas del camino</h2></div><button id="drawerClose" aria-label="Cerrar notas">×</button></div><div class="notes-list" id="notesList"></div><p class="drawer-foot">Some choices leave no scar until much later.</p></aside>
+  <aside class="notes-drawer" id="notesDrawer" aria-hidden="true"><div class="drawer-head"><div><span class="eyebrow">LO QUE GUARDA LA OSCURIDAD</span><h2>Notas del camino</h2></div><button id="drawerClose" aria-label="Cerrar notas">×</button></div><div class="notes-list" id="notesList"></div><p class="drawer-foot">Algunas decisiones no dejan cicatriz hasta mucho después.</p></aside>
   <div class="toast" id="toast" role="status"></div>
   <script src="game.js"></script>
 </body>
