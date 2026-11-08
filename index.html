@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#100f10" />
-  <meta name="description" content="A dark fantasy choice-driven card RPG." />
+  <meta name="description" content="Un RPG de cartas y fantasía oscura, guiado por decisiones." />
   <link rel="icon" href="data:," />
-  <title>The Black Road — A Grimdark Card RPG</title>
+  <title>El Camino Negro — RPG de fantasía oscura</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
@@ -14,64 +14,91 @@
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
-  <main class="game-shell">
+  <main class="game-shell awaiting-class" id="gameShell">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="The Black Road home" id="brandHome"><span class="brand-mark">✦</span><span>THE BLACK ROAD</span></a>
-      <div class="chapter-indicator"><span class="chapter-kicker">A TALE OF THE WICKED KINGDOM</span><span id="chapterLabel">PROLOGUE · THE LAST MILE</span></div>
-      <button class="sound-toggle" id="soundToggle" aria-label="Toggle ambient sound" title="Ambient sound">♫ <span>Sound off</span></button>
+      <a class="brand" href="#" aria-label="Inicio: El Camino Negro" id="brandHome"><span class="brand-mark">✦</span><span>EL CAMINO NEGRO</span></a>
+      <div class="chapter-indicator"><span class="chapter-kicker">UNA HISTORIA DEL REINO MALDITO</span><span id="chapterLabel">PRÓLOGO · LA ÚLTIMA MILLA</span></div>
+      <button class="sound-toggle" id="soundToggle" aria-label="Activar sonido ambiental" title="Sonido ambiental">♫ <span>Sonido apagado</span></button>
     </header>
 
-    <section class="status-row" aria-label="Mercenary status">
-      <div class="status-card gold-status"><div class="status-symbol">◈</div><div class="status-copy"><span class="status-name">GOLD</span><strong id="goldValue">12</strong></div><div class="status-delta" id="goldDelta"></div></div>
-      <div class="status-card health-status"><div class="status-symbol">♥</div><div class="status-copy"><span class="status-name">HEALTH</span><strong id="healthValue">8</strong></div><div class="status-meter"><i id="healthMeter"></i></div><div class="status-delta" id="healthDelta"></div></div>
-      <div class="status-card sanity-status"><div class="status-symbol">◉</div><div class="status-copy"><span class="status-name">SANITY</span><strong id="sanityValue">7</strong></div><div class="status-meter"><i id="sanityMeter"></i></div><div class="status-delta" id="sanityDelta"></div></div>
+    <section class="status-row" aria-label="Estado del personaje">
+      <div class="status-card gold-status"><div class="status-symbol">◈</div><div class="status-copy"><span class="status-name">ORO</span><strong id="goldValue">12</strong></div><div class="status-delta" id="goldDelta"></div></div>
+      <div class="status-card health-status"><div class="status-symbol">♥</div><div class="status-copy"><span class="status-name">VIDA</span><strong id="healthValue">8</strong></div><div class="status-meter"><i id="healthMeter"></i></div><div class="status-delta" id="healthDelta"></div></div>
+      <div class="status-card sanity-status"><div class="status-symbol">◉</div><div class="status-copy"><span class="status-name">CORDURA</span><strong id="sanityValue">7</strong></div><div class="status-meter"><i id="sanityMeter"></i></div><div class="status-delta" id="sanityDelta"></div></div>
     </section>
 
     <section class="journey-row">
-      <div class="journey-title"><span class="eyebrow">YOUR PILGRIMAGE</span><span id="journeyName">A debt paid in blood</span></div>
+      <div class="journey-title"><span class="eyebrow">TU PEREGRINAJE</span><span id="journeyName">Una deuda pagada con sangre</span></div>
       <div class="journey-track" id="journeyTrack" aria-label="Journey progress"></div>
       <div class="journey-count" id="journeyCount">01 <span>/ 08</span></div>
     </section>
 
     <section class="play-area" id="playArea">
-      <div class="side-note left-note"><span class="note-rule"></span><span>THE KINGDOM<br>REMEMBERS</span></div>
+      <div class="side-note left-note"><span class="note-rule"></span><span>EL REINO<br>RECUERDA</span></div>
       <article class="event-card" id="eventCard" aria-live="polite">
         <div class="card-art" id="cardArt">
           <div class="art-overlay"></div>
-          <span class="art-location" id="artLocation">THE ASHEN ROAD</span>
+          <span class="art-location" id="artLocation">EL CAMINO DE CENIZA</span>
           <span class="art-sigil">✦</span>
           <svg class="scene-svg" id="sceneSvg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A bleak landscape illustration">
             <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#201b20"/><stop offset=".62" stop-color="#66443e"/><stop offset="1" stop-color="#171516"/></linearGradient><radialGradient id="moon"><stop stop-color="#eee0bd"/><stop offset=".65" stop-color="#d8c6a5"/><stop offset="1" stop-color="#c09b75" stop-opacity=".12"/></radialGradient></defs>
             <rect width="640" height="360" fill="url(#sky)"/><circle cx="468" cy="93" r="58" fill="url(#moon)" opacity=".8"/><path d="M0 206 90 151l80 64 70-94 86 91 89-79 99 75 58-43 68 47v148H0Z" fill="#292226"/><path d="M0 263q90-51 176-9t158-1q118-44 306 11v96H0Z" fill="#171618"/><path d="m300 360 52-113 38-42 14 42 21 21 30 92Z" fill="#39302e"/><path d="m352 247 39-41 15 42" fill="none" stroke="#85634f" stroke-width="3" opacity=".55"/><path d="M116 255v-82m0 14-29-24m29 36 27-43m-28 68-22-17m414 50v-87m0 31-20-18m20 37 25-35" fill="none" stroke="#141315" stroke-width="12" stroke-linecap="round"/><path d="M43 280q130-38 231-3m205-6q64-24 131-2" stroke="#7c5343" stroke-width="1" opacity=".4" fill="none"/></svg>
         </div>
         <div class="card-content">
-          <div class="event-meta"><span class="event-type" id="eventType">A STRANGER'S PRAYER</span><span class="event-number" id="eventNumber">I</span></div>
-          <h1 id="eventTitle">The last mile</h1>
-          <p class="event-copy" id="eventCopy">Rain needles the road. At the milestone, a dying courier clutches a sealed letter to his chest. A black wax sigil marks it as the Queen's own. Somewhere behind you, a bell tolls once.</p>
-          <div class="memory-line" id="memoryLine"><span>✦</span><span id="memoryText">The road has not yet learned your name.</span></div>
+          <div class="event-meta"><span class="event-type" id="eventType">LA PLEGARIA DE UN EXTRAÑO</span><span class="event-number" id="eventNumber">I</span></div>
+          <h1 id="eventTitle">La última milla</h1>
+          <p class="event-copy" id="eventCopy">La lluvia azota el camino. Junto al mojón, un mensajero moribundo abraza una carta sellada. La marca de cera negra pertenece a la reina. A tu espalda, una campana tañe una vez.</p>
+          <div class="memory-line" id="memoryLine"><span>✦</span><span id="memoryText">El camino aún no ha aprendido tu nombre.</span></div>
           <div class="choice-row" id="choiceRow">
-            <button class="choice choice-left" id="choiceLeft"><span class="choice-key">←</span><span class="choice-body"><span class="choice-action" id="leftAction">Take the letter</span><span class="choice-detail" id="leftDetail">A dead man's last wish may buy you passage.</span><span class="choice-cost" id="leftCost"><b>+3</b> GOLD <i>·</i> <b>−1</b> SANITY</span></span><span class="choice-arrow">↗</span></button>
-            <button class="choice choice-right" id="choiceRight"><span class="choice-key">→</span><span class="choice-body"><span class="choice-action" id="rightAction">Leave him to the crows</span><span class="choice-detail" id="rightDetail">Keep your hands clean. Keep moving.</span><span class="choice-cost" id="rightCost"><b>+1</b> HEALTH <i>·</i> <b>−2</b> GOLD</span></span><span class="choice-arrow">↗</span></button>
+            <button class="choice choice-left" id="choiceLeft"><span class="choice-key">←</span><span class="choice-body"><span class="choice-action" id="leftAction">Tomar la carta</span><span class="choice-detail" id="leftDetail">El último deseo de un moribundo podría abrirte camino.</span><span class="choice-cost" id="leftCost"><b>+3</b> ORO <i>·</i> <b>−1</b> CORDURA</span></span><span class="choice-arrow">↗</span></button>
+            <button class="choice choice-right" id="choiceRight"><span class="choice-key">→</span><span class="choice-body"><span class="choice-action" id="rightAction">Dejarlo a los cuervos</span><span class="choice-detail" id="rightDetail">Mantén las manos limpias. Sigue adelante.</span><span class="choice-cost" id="rightCost"><b>+1</b> VIDA <i>·</i> <b>−2</b> ORO</span></span><span class="choice-arrow">↗</span></button>
           </div>
+          <p class="roll-result" id="rollResult" aria-live="polite"></p>
         </div>
       </article>
-      <div class="side-note right-note"><span class="note-rule"></span><span>NO ROAD<br>LEADS HOME</span></div>
+      <div class="side-note right-note"><span class="note-rule"></span><span>NINGÚN CAMINO<br>LLEVA A CASA</span></div>
     </section>
 
     <footer class="bottom-bar">
-      <div class="hint"><span class="swipe-icon">↔</span> CHOOSE YOUR FATE <span class="hint-divider">·</span> SWIPE OR SELECT</div>
-      <button class="codex-button" id="codexButton"><span>☷</span> FIELD NOTES <b id="noteCount">0</b></button>
+      <div class="hint"><span class="swipe-icon">↔</span> ELIGE TU DESTINO <span class="hint-divider">·</span> DESLIZA O PULSA</div>
+      <div class="footer-actions"><button class="codex-button shop-button" id="shopButton"><span>⚒</span> MERCADO</button><button class="codex-button" id="codexButton"><span>☷</span> NOTAS <b id="noteCount">0</b></button></div>
     </footer>
   </main>
 
-  <div class="modal-backdrop hidden" id="modalBackdrop">
-    <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-emblem" id="modalEmblem">✦</div><span class="eyebrow" id="modalEyebrow">THE KINGDOM HAS TAKEN ITS DUE</span><h2 id="modalTitle">A life spent poorly</h2><p id="modalCopy"></p>
-      <div class="ending-summary" id="endingSummary"></div>
-      <button class="restart-button" id="restartButton">WALK THE ROAD AGAIN <span>↗</span></button>
+  <div class="class-backdrop" id="classBackdrop">
+    <section class="class-panel" role="dialog" aria-modal="true" aria-labelledby="classTitle">
+      <span class="eyebrow">EL CAMINO EXIGE UN PRECIO</span><h1 id="classTitle">¿Quién desafiará a la reina?</h1>
+      <p>Elige tu oficio. Cada clase comienza con recursos distintos y una habilidad única.</p>
+      <div class="class-options" id="classOptions"></div>
     </section>
   </div>
-  <aside class="notes-drawer" id="notesDrawer" aria-hidden="true"><div class="drawer-head"><div><span class="eyebrow">WHAT THE DARK KEEPS</span><h2>Field notes</h2></div><button id="drawerClose" aria-label="Close notes">×</button></div><div class="notes-list" id="notesList"></div><p class="drawer-foot">Some choices leave no scar until much later.</p></aside>
+  <div class="combat-backdrop hidden" id="combatBackdrop">
+    <section class="combat-panel" role="dialog" aria-modal="true" aria-labelledby="combatTitle">
+      <span class="eyebrow">ENCUENTRO</span><h2 id="combatTitle">El guardián del puente</h2>
+      <p class="combat-description" id="combatDescription"></p>
+      <div class="combat-bars"><div><span>TÚ</span><b id="combatPlayerValue">8 / 8</b><div class="combat-meter"><i id="combatPlayerMeter"></i></div></div><div><span>ENEMIGO</span><b id="combatEnemyValue">8 / 8</b><div class="combat-meter enemy-meter"><i id="combatEnemyMeter"></i></div></div></div>
+      <div class="combat-log" id="combatLog" aria-live="polite"></div>
+      <div class="combat-actions"><button id="attackButton">ATACAR</button><button id="abilityButton">HABILIDAD</button><button id="guardButton">DEFENDERSE</button><button id="combatPotionButton">USAR POCIÓN</button><button id="fleeButton">HUIR</button></div>
+    </section>
+  </div>
+  <div class="shop-backdrop hidden" id="shopBackdrop">
+    <section class="shop-panel" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <button class="shop-close" id="shopClose" aria-label="Cerrar mercado">×</button>
+      <span class="eyebrow">EL MERCADERO DE LOS DESPOJOS</span><h2 id="shopTitle">Un respiro antes del camino</h2>
+      <p class="shop-intro">El oro compra acero, protección y un instante de lucidez. Los objetos se conservan durante toda la peregrinación.</p>
+      <div class="shop-gold">Tu bolsa: <b id="shopGold">12</b> ◈</div>
+      <div class="shop-items" id="shopItems"></div>
+      <p class="shop-inventory" id="inventoryText"></p>
+    </section>
+  </div>
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-emblem" id="modalEmblem">✦</div><span class="eyebrow" id="modalEyebrow">EL REINO HA COBRADO SU DEUDA</span><h2 id="modalTitle">Una vida malgastada</h2><p id="modalCopy"></p>
+      <div class="ending-summary" id="endingSummary"></div>
+      <button class="restart-button" id="restartButton">RECORRER EL CAMINO OTRA VEZ <span>↗</span></button>
+    </section>
+  </div>
+  <aside class="notes-drawer" id="notesDrawer" aria-hidden="true"><div class="drawer-head"><div><span class="eyebrow">LO QUE GUARDA LA OSCURIDAD</span><h2>Notas del camino</h2></div><button id="drawerClose" aria-label="Cerrar notas">×</button></div><div class="notes-list" id="notesList"></div><p class="drawer-foot">Algunas decisiones no dejan cicatriz hasta mucho después.</p></aside>
   <div class="toast" id="toast" role="status"></div>
   <script src="game.js"></script>
 </body>

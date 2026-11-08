@@ -1,133 +1,425 @@
 (() => {
-  const maxHealth = 10, maxSanity = 10;
-  const initial = () => ({ gold: 12, health: 8, sanity: 7, step: 0, flags: {}, notes: [], history: [] });
-  let state = initial(), locked = false, toastTimer;
   const $ = id => document.getElementById(id);
   const roman = ['I','II','III','IV','V','VI','VII','VIII'];
-  const stories = [
-    {
-      chapter:'PROLOGUE · THE LAST MILE', place:'THE ASHEN ROAD', type:"A STRANGER'S PRAYER", title:'The last mile',
-      copy:'Rain needles the road. At the milestone, a dying courier clutches a sealed letter to his chest. A black wax sigil marks it as the Queen’s own. Somewhere behind you, a bell tolls once.',
-      memory:'The road has not yet learned your name.', scene:'road',
-      choices:[
-        {action:'Take the letter',detail:'A dead man’s last wish may buy you passage.',cost:[['+3','gold'],['−1','sanity']],effect:{gold:3,sanity:-1},flag:{letter:true},note:'You took the Queen’s sealed letter. Its wax was warm.'},
-        {action:'Leave him to the crows',detail:'Keep your hands clean. Keep moving.',cost:[['+1','health'],['−2','gold']],effect:{health:1,gold:-2},flag:{mercy:true},note:'You left a dying courier on the road. He watched you go.'}
-      ]
-    },
-    {
-      chapter:'ACT I · THE HOLLOW MILE',place:'THE WEEPING BRIDGE',type:'A TOLL IN BLOOD',title:'The bridge keeper',scene:'bridge',
-      copy:s=>s.flags.letter?'A toll-keeper in a crown of fingers blocks the bridge. His milky eyes fix on the Queen’s seal beneath your coat. “That belongs to the dead,” he says. “Or to me.”':'A toll-keeper in a crown of fingers blocks the bridge. Beneath the planks, the river whispers your childhood name. “Coin, blood, or a secret,” he croaks.',
-      memory:s=>s.flags.letter?'The black wax draws hungry eyes.':'The river knows a name you never gave it.',
-      choices:s=>[
-        {action:s.flags.letter?'Show him the seal':'Pay his toll',detail:s.flags.letter?'Let the royal mark do the threatening.':'Some doors open only for the right weight of coin.',cost:s.flags.letter?[['+1','sanity']]:[['−4','gold']],effect:s.flags.letter?{sanity:1}:{gold:-4},flag:{bridgePaid:true},note:s.flags.letter?'The keeper bowed to the seal, though his smile did not.':'You paid the keeper. The bridge let you pass.'},
-        {action:'Make him afraid',detail:'A little violence is cheaper than a little trust.',cost:[['−2','health'],['+2','gold']],effect:{health:-2,gold:2},flag:{bridgeThreat:true},note:'You crossed the bridge over its keeper’s groans.'},
-        {action:'Whisper to the river',detail:'Give the water a memory. It will give you a way across.',cost:[['−2','sanity']],effect:{sanity:-2},requires:{stat:'sanity',min:6,label:'6 SANITY'},flag:{riverGift:true},note:'The river carried you across, then kept a piece of your past.'}
-      ]
-    },
-    {
-      chapter:'ACT I · THE HOLLOW MILE',place:'SAINT ORRA’S CRYPT',type:'A CANDLE IN THE DARK',title:'The saint’s teeth',scene:'crypt',
-      copy:s=>s.flags.letter?'The letter gives a faint, rhythmic pulse. A crypt door opens at its approach. Inside, a reliquary glitters beneath a fresco of the Queen weeping black tears.':'A crypt door yawns open beneath a fresco of the Queen weeping black tears. Something gold glitters between the saint’s teeth.',
-      memory:s=>s.flags.riverGift?'The cold river speaks in the silence between your thoughts.':'The dead here were buried facing the wrong way.',
-      choices:[
-        {action:'Loot the reliquary',detail:'Gold spends well, even when it screams.',cost:[['+6','gold'],['−2','sanity']],effect:{gold:6,sanity:-2},flag:{relic:true},note:'You pried the saint’s gold teeth free. They chattered all the way down.'},
-        {action:'Salt the threshold',detail:'Deny the dead their audience. Take the quiet and go.',cost:[['+1','sanity']],effect:{sanity:1},flag:{cryptSealed:true},note:'You sealed the crypt. Something inside thanked you in your mother’s voice.'},
-        {action:'Drink the black incense',detail:'Let the dead lend you their sight.',cost:[['−3','health'],['+2','sanity']],effect:{health:-3,sanity:2},requires:{stat:'sanity',min:5,label:'5 SANITY'},flag:{deathSight:true},note:'The dead showed you a path. You can no longer remember your own face.'}
-      ]
-    },
-    {
-      chapter:'ACT II · THE RED CONFESSION',place:'VILLAGE OF CROWS',type:'A DEBT COMES DUE',title:'The inquisitor’s offer',scene:'village',
-      copy:s=>s.flags.mercy?'At the village gate, the courier’s sister waits with a crossbow. She saw you leave him. Before she can loose, an inquisitor offers to buy your silence.':'At the village gate, an inquisitor in a velvet mask offers coin for a name. Behind him, villagers hang from the chapel eaves, swinging in the wet wind.',
-      memory:s=>s.flags.letter?'“Give me the letter,” the inquisitor says. “Or give me its bearer.”':'The inquisitor’s offer smells of cloves and old blood.',
-      choices:s=>[
-        {action:s.flags.mercy?'Trade the sister’s name':'Sell a name',detail:'One life for a purse. You need not say whose.',cost:[['+5','gold'],['−1','sanity']],effect:{gold:5,sanity:-1},flag:{inquisitorDeal:true},note:'You sold a name to the inquisitor. He did not ask how you knew it.'},
-        {action:'Take his purse, take his eye',detail:'A brutal bargain. No witnesses you need to keep.',cost:[['−2','health'],['+4','gold']],effect:{health:-2,gold:4},flag:{inquisitorRobbed:true},note:'You left the inquisitor bleeding in the mud. The crows followed.'},
-        {action:'Buy the villagers’ freedom',detail:'A costly gesture; they may remember it.',cost:[['−6','gold'],['+1','sanity']],effect:{gold:-6,sanity:1},requires:{stat:'gold',min:8,label:'8 GOLD'},flag:{villagersSaved:true},note:'You bought the villagers’ freedom. They pressed a rusted key into your hand.'}
-      ]
-    },
-    {
-      chapter:'ACT II · THE RED CONFESSION',place:'THE BLACKWOOD',type:'A CHOICE IN THE TREES',title:'The old companion',scene:'woods',
-      copy:s=>s.flags.villagersSaved?'A freed villager leads you into the blackwood. Your old companion, Mara, waits beneath a hanging tree. “The Queen is a hollow thing,” she says. “Help me end her.”':'Mara steps from the blackwood, your old companion and once your shield. Her blade is drawn. “The Queen is a hollow thing,” she says. “Help me end her.”',
-      memory:s=>s.flags.inquisitorDeal?'Mara knows what you sold. She does not ask for whom.':'Once, you shared a blanket and a battlefield. Only one remains warm.',
-      choices:s=>[
-        {action:'Stand with Mara',detail:'Trust is a blade. Hope it points outward.',cost:[['−1','gold'],['+1','sanity']],effect:{gold:-1,sanity:1},flag:{maraAlly:true},note:'You chose Mara. She gave you the old sign: two fingers to the heart.'},
-        {action:'Sell her to the crown',detail:'An old friend is worth more alive to an inquisitor.',cost:[['+6','gold'],['−2','sanity']],effect:{gold:6,sanity:-2},flag:{maraSold:true},note:'You sold Mara. She met your eyes as the irons closed.'},
-        {action:'Strike before she can',detail:'No promises. No loose ends.',cost:[['−2','health'],['+3','gold']],effect:{health:-2,gold:3},requires:{stat:'health',min:6,label:'6 HEALTH'},flag:{maraKilled:true},note:'You struck first. Mara fell without a word.'}
-      ]
-    },
-    {
-      chapter:'ACT III · THE SUNKEN CROWN',place:'THE DROWNED KEEP',type:'A DOOR THAT BREATHES',title:'Under the drowned keep',scene:'keep',
-      copy:s=>s.flags.maraAlly?'Mara finds a submerged gate beneath the keep. Through it, a stair coils down toward a heartbeat that shakes the stones.':'The drowned keep rises from the black water. A stair descends beneath it, toward a heartbeat that shakes the stones.',
-      memory:s=>s.flags.relic?'The saint’s teeth chime against your purse. The stair answers.':'Water climbs the walls, though the tide has gone out.',
-      choices:s=>[
-        {action:'Force the iron gate',detail:'Muscle through before the water takes your breath.',cost:[['−3','health']],effect:{health:-3},flag:{gateForced:true},note:'You forced the gate. The keep took its due in blood.'},
-        {action:'Offer the Queen’s letter',detail:'A royal seal may open what iron cannot.',cost:[['−1','sanity']],effect:{sanity:-1},requires:{flag:'letter',label:'THE QUEEN’S LETTER'},flag:{letterBurned:true},note:'The letter burned blue. Something below whispered, “At last.”'},
-        {action:'Find another way in',detail:'Let the dark show you its old seams.',cost:[['−2','sanity'],['+2','gold']],effect:{sanity:-2,gold:2},flag:{darkRoute:true},note:'You found a forgotten way down, and something else found you.'}
-      ]
-    },
-    {
-      chapter:'ACT III · THE SUNKEN CROWN',place:'THE THRONE BELOW',type:'THE LAST BARGAIN',title:'What the crown wants',scene:'throne',
-      copy:s=>s.flags.letterBurned?'The Queen sits beneath the waves, a crown of drowned stars above her brow. The letter’s smoke circles her throat like a noose. “Choose what you came to be.”':'The Queen sits beneath the waves, a crown of drowned stars above her brow. She knows every road you took to reach her. “Choose what you came to be.”',
-      memory:s=>s.flags.maraAlly?'Mara takes your left hand. “Whatever happens, do not let her keep your name.”':s.flags.relic?'The saint’s teeth rattle in your purse, eager to be let out.':'Beyond the throne, the sea presses its face against the glass.',
-      choices:s=>[
-        {action:'Take the crown',detail:'Rule the cursed kingdom. Make its hunger yours.',cost:[['−2','sanity']],effect:{sanity:-2},flag:{ending:'crown'},note:'You took the crown. The sea bowed—and so did every shadow.'},
-        {action:s.flags.maraAlly?'Give Mara your name':'Break the drowned stars',detail:s.flags.maraAlly?'A life for a life; trust her with the final cut.':'Shatter the crown and let the old dark drown with it.',cost:[['−2','health'],['−1','sanity']],effect:{health:-2,sanity:-1},flag:{ending:'break'},note:s.flags.maraAlly?'You gave Mara your name. She made the cut.':'You broke the crown. For the first time in a century, the tide turned.'},
-        {action:'Name a new price',detail:'Make the Queen bargain with the one thing she cannot own.',cost:[['−5','gold']],effect:{gold:-5},requires:{stat:'gold',min:10,label:'10 GOLD'},flag:{ending:'bargain'},note:'You bought a kingdom’s dawn with every coin you had.'}
-      ]
-    }
-  ];
-  const statNames={gold:'GOLD',health:'HEALTH',sanity:'SANITY'};
-  function resolved(value){return typeof value==='function'?value(state):value}
-  function render(){
-    const c=stories[state.step]; if(!c){finish();return}
-    $('chapterLabel').textContent=c.chapter;$('artLocation').textContent=c.place;$('eventType').textContent=c.type;$('eventTitle').textContent=c.title;$('eventCopy').textContent=resolved(c.copy);$('memoryText').textContent=resolved(c.memory||'The dark is listening.');$('eventNumber').textContent=roman[state.step];
-    const choices=resolved(c.choices);
-    const visible=[choices[0],choices[1]];
-    // An earned third option replaces the second choice; before it is earned, both ordinary options remain available.
-    if(choices[2]&&canChoose(choices[2]))visible[1]=choices[2];
-    visible.forEach((choice,i)=>paintChoice(i,choice));
-    updateStats();updateJourney();updateNotes();setScene(c.scene);
-  }
-  function paintChoice(index,ch){
-    const el=index===0?$('choiceLeft'):$('choiceRight');el.dataset.locked='false';el.classList.remove('choice-locked');el.disabled=false;
-    $(index===0?'leftAction':'rightAction').textContent=ch.action;$(index===0?'leftDetail':'rightDetail').textContent=ch.detail;
-    const cost=ch.cost||[];$(index===0?'leftCost':'rightCost').innerHTML=cost.map(([n,s])=>`<b class="${n.startsWith('−')?'loss':''}">${n}</b> ${statNames[s]}`).join(' <i>·</i> ')||'<b>NO PRICE</b>';
-    el.onclick=()=>choose(ch,index);
-  }
-  function canChoose(ch){if(!ch.requires)return true;const r=ch.requires;if(r.stat)return state[r.stat]>=r.min;if(r.flag)return !!state.flags[r.flag];return true}
-  function choose(ch,index){if(locked||!canChoose(ch))return;locked=true;const c=$('eventCard');c.classList.add('advance');if(index===1)c.classList.add('right');
-    setTimeout(()=>{
-      Object.entries(ch.effect||{}).forEach(([key,value])=>state[key]=Math.max(0,Math.min(key==='gold'?99:key==='health'?maxHealth:maxSanity,state[key]+value)));
-      if(ch.flag)Object.assign(state.flags,ch.flag);if(ch.note)state.notes.push({title:stories[state.step].title,text:ch.note});state.history.push({step:state.step,action:ch.action});
-      if(state.health<=0||state.sanity<=0||state.gold<=0){finish(state.health<=0?'health':state.sanity<=0?'sanity':'gold');return}
-      if(state.step===stories.length-1){finish();return}
-      state.step++;c.classList.remove('advance','right');locked=false;render();
-    },260)
-  }
-  function updateStats(){[['gold','goldValue'],['health','healthValue'],['sanity','sanityValue']].forEach(([stat,id])=>$(id).textContent=state[stat]);$('healthMeter').style.width=`${state.health/maxHealth*100}%`;$('sanityMeter').style.width=`${state.sanity/maxSanity*100}%`}
-  function updateJourney(){$('journeyCount').innerHTML=`${String(state.step+1).padStart(2,'0')} <span>/ 08</span>`;const track=$('journeyTrack');track.innerHTML=stories.map((_,i)=>`<i class="journey-dot ${i<=state.step?'done':''}"></i>`).join('');track.style.setProperty('--progress',`${state.step/(stories.length-1)*100}%`)}
-  function updateNotes(){$('noteCount').textContent=state.notes.length;const list=$('notesList');list.innerHTML=state.notes.length?state.notes.map(n=>`<article class="note-entry"><span>${escapeHtml(n.title.toUpperCase())}</span><p>${escapeHtml(n.text)}</p></article>`).join(''):'<p class="empty-notes">No marks yet. The road is still deciding what to keep.</p>'}
-  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-  const scenes={
-    road:['#201b20','#66443e','468,93','M0 206 90 151l80 64 70-94 86 91 89-79 99 75 58-43 68 47v148H0Z'],
-    bridge:['#192326','#51605a','467,79','M0 228 74 190l90 50 90-82 89 90 80-63 96 62 56-46 65 34v125H0Z'],
-    crypt:['#1b171b','#573c3c','470,74','M0 232 80 166l71 66 66-116 75 111 91-82 78 90 74-70 105 59v136H0Z'],
-    village:['#211a1b','#744b43','480,85','M0 220 70 199v-56l60 0v41l40-20 62 33 65-71 81 87 70-30 70 34 74-56 48 35v164H0Z'],
-    woods:['#141b19','#4e5948','470,75','M0 230 51 115l38 115 56-149 43 159 56-203 50 201 62-160 45 172 64-211 54 189 52-140 69 151v111H0Z'],
-    keep:['#171a20','#48565e','468,76','M0 219 84 167l73 50 68-126 72 112 80-61 70 77 69-47 76 41 48-38v125H0Z'],
-    throne:['#19181f','#72544d','472,80','M0 236 77 204l76 20 69-121 70 112 78-64 71 67 83-47 76 54 63-28 77 37v126H0Z']
+  const shopStops = [0, 2, 4, 6];
+  const classes = {
+    asesino: {name:'Asesino', aliases:'Cazador · Pícaro · Arquero', hp:8, sanity:7, gold:12, damage:2, ability:'Ataque furtivo', abilityText:'Una vez por combate, inflige 4 de daño.', icon:'➶'},
+    caballero: {name:'Caballero', aliases:'Berserker · Paladín · Guerrero', hp:10, sanity:6, gold:10, damage:3, ability:'Muro de hierro', abilityText:'Una vez por combate, recupera 2 de vida y reduce el próximo golpe en 2.', icon:'♜'},
+    mago: {name:'Mago', aliases:'Hechicero · Brujo · Druida', hp:7, sanity:9, gold:12, damage:2, ability:'Descarga arcana', abilityText:'Una vez por combate, gasta 1 de cordura para infligir 4 de daño.', icon:'✧'}
   };
-  function setScene(scene){const [sky,haze,moon,path]=scenes[scene]||scenes.road;const svg=$('sceneSvg');svg.innerHTML=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky}"/><stop offset=".62" stop-color="${haze}"/><stop offset="1" stop-color="#171516"/></linearGradient><radialGradient id="moon"><stop stop-color="#eee0bd"/><stop offset=".65" stop-color="#d8c6a5"/><stop offset="1" stop-color="#c09b75" stop-opacity=".12"/></radialGradient></defs><rect width="640" height="360" fill="url(#sky)"/><circle cx="${moon.split(',')[0]}" cy="${moon.split(',')[1]}" r="58" fill="url(#moon)" opacity=".8"/><path d="${path}" fill="#292226"/><path d="M0 263q90-51 176-9t158-1q118-44 306 11v96H0Z" fill="#171618"/><path d="m300 360 52-113 38-42 14 42 21 21 30 92Z" fill="#39302e"/><path d="m352 247 39-41 15 42" fill="none" stroke="#85634f" stroke-width="3" opacity=".55"/><path d="M116 255v-82m0 14-29-24m29 36 27-43m-28 68-22-17m414 50v-87m0 31-20-18m20 37 25-35" fill="none" stroke="#141315" stroke-width="12" stroke-linecap="round"/><path d="M43 280q130-38 231-3m205-6q64-24 131-2" stroke="#7c5343" stroke-width="1" opacity=".4" fill="none"/>`}
-  function finish(cause){locked=true;const modal=$('modalBackdrop');modal.classList.remove('hidden');const title=$('modalTitle'),copy=$('modalCopy'),emblem=$('modalEmblem'),eyebrow=$('modalEyebrow');
-    if(cause){emblem.textContent=cause==='health'?'†':'◉';eyebrow.textContent=cause==='sanity'?'THE DARK HAS YOUR NAME':'THE KINGDOM HAS TAKEN ITS DUE';title.textContent=cause==='health'?'A body for the crows':cause==='sanity'?'The last thought':'The road ends here';copy.textContent=cause==='health'?'Steel found its mark. The road goes on without you, as roads do.':cause==='sanity'?'The whispers became a choir. You joined them, and forgot which voice was yours.':'You have nothing left to bargain with. The kingdom keeps what it is owed.'}
-    else{emblem.textContent=state.flags.ending==='crown'?'♛':state.flags.ending==='bargain'?'◈':'✦';eyebrow.textContent='THE KINGDOM WILL REMEMBER';title.textContent=state.flags.ending==='crown'?'A crown of drowned stars':state.flags.ending==='bargain'?'The price of morning':state.flags.maraAlly?'Two names, one dawn':'The tide turns';copy.textContent=state.flags.ending==='crown'?'You wear the drowned crown. The kingdom kneels, and the shadows learn to call you sovereign. Was it worth the name you surrendered?':state.flags.ending==='bargain'?'With your last coins, you bought the kingdom a sunrise. You leave with empty hands—and the first honest silence in years.':state.flags.ending==='break'&&state.flags.maraAlly?'Mara breaks the crown with your name on her lips. The waters recede. At dawn, she cannot remember your face.':'The drowned stars shatter. The old curse breaks with them. Somewhere on the road, the crows cry out like bells.'}
-    $('endingSummary').innerHTML=`<span><b>${state.gold}</b>GOLD</span><span><b>${state.health}</b>HEALTH</span><span><b>${state.sanity}</b>SANITY</span><span><b>${state.step+1}/8</b>FATE`;
+  const shopGoods = {
+    asesino: [
+      {id:'potion',type:'Poción',name:'Poción de sangre',icon:'♥',price:3,desc:'Recupera 3 de vida. Máximo: 3.'},
+      {id:'tonic',type:'Poción',name:'Sales de lucidez',icon:'◉',price:3,desc:'Recupera 3 de cordura. Máximo: 3.'},
+      {id:'weapon',name:'Daga de monte',icon:'†',price:5,desc:'Arma: inflige 4 de daño por ataque.',damage:4},
+      {id:'armor',name:'Cuero de acechador',icon:'▤',price:6,desc:'Armadura: reduce en 1 el daño recibido.'},
+      {id:'weapon2',name:'Arco de hueso negro',icon:'➶',price:10,desc:'Arma superior: inflige 5 de daño por ataque.',damage:5},
+      {id:'relic',name:'Ojo del cuervo',icon:'◈',price:12,desc:'Reliquia permanente: +2 de oro al ganar cada combate.',effect:'combatGold'}
+    ],
+    caballero: [
+      {id:'potion',type:'Poción',name:'Poción de sangre',icon:'♥',price:3,desc:'Recupera 3 de vida. Máximo: 3.'},
+      {id:'tonic',type:'Poción',name:'Tónico de temple',icon:'◉',price:4,desc:'Recupera 3 de cordura. Máximo: 3.'},
+      {id:'weapon',name:'Martillo de guerra',icon:'⚒',price:6,desc:'Arma: inflige 4 de daño por ataque.',damage:4},
+      {id:'armor',name:'Cota de malla',icon:'▤',price:7,desc:'Armadura: reduce en 2 el daño recibido.'},
+      {id:'weapon2',name:'Mandoble del verdugo',icon:'⚔',price:12,desc:'Arma superior: inflige 6 de daño por ataque.',damage:6},
+      {id:'relic',name:'Corazón de hierro',icon:'♥',price:13,desc:'Reliquia permanente: aumenta tu vida máxima en 2.',effect:'maxHealth'}
+    ],
+    mago: [
+      {id:'potion',type:'Poción',name:'Poción de sangre',icon:'♥',price:3,desc:'Recupera 3 de vida. Máximo: 3.'},
+      {id:'tonic',type:'Poción',name:'Elixir de lucidez',icon:'◉',price:3,desc:'Recupera 3 de cordura. Máximo: 3.'},
+      {id:'weapon',name:'Bastón de espino',icon:'ϟ',price:6,desc:'Arma: inflige 4 de daño por ataque.',damage:4},
+      {id:'armor',name:'Manto de runas',icon:'▤',price:6,desc:'Armadura: reduce en 1 el daño recibido.'},
+      {id:'weapon2',name:'Vara de la tormenta',icon:'ϟ',price:12,desc:'Arma superior: inflige 5 de daño por ataque.',damage:5},
+      {id:'relic',name:'Semilla del aquelarre',icon:'✧',price:13,desc:'Reliquia permanente: recupera 2 de vida tras cada combate.',effect:'combatHeal'}
+    ]
+  };
+  let state, combat=null, locked=false, toastTimer;
+  const initial = () => ({classId:null,gold:12,health:8,maxHealth:8,sanity:7,step:0,flags:{},notes:[],history:[],inventory:{potion:0,tonic:0},equipment:{weapon:null,damage:0,armor:0},relics:[],visitedShops:[]});
+  state = initial();
+  const story = [
+    {chapter:'PRÓLOGO · LA ÚLTIMA MILLA',place:'EL CAMINO DE CENIZA',type:'LA PLEGARIA DE UN EXTRAÑO',title:'La última milla',scene:'road',copy:'La lluvia azota el camino. Junto al mojón, un mensajero moribundo abraza una carta sellada. La marca de cera negra pertenece a la reina. A tu espalda, una campana tañe una vez.',memory:'El camino aún no ha aprendido tu nombre.',choices:[
+      {action:'Tomar la carta',detail:'El último deseo de un moribundo podría abrirte camino.',cost:'+3 oro · −1 cordura',effect:{gold:3,sanity:-1},flag:{letter:true},note:'Tomaste la carta sellada de la reina. La cera aún estaba tibia.'},
+      {action:'Dejarlo a los cuervos',detail:'Mantén las manos limpias. Sigue adelante.',cost:'+1 vida · −2 oro',effect:{health:1,gold:-2},flag:{mercy:true},note:'Dejaste al mensajero moribundo en el camino. Te vio marcharte.'}
+    ]},
+    {chapter:'ACTO I · LA MILLA HUECA',place:'EL PUENTE DE LOS LAMENTOS',type:'UN PEAJE DE SANGRE',title:'El guardián del puente',scene:'bridge',copy:s=>s.flags.letter?'Un cobrador con una corona de dedos bloquea el puente. Sus ojos lechosos se clavan en el sello real. «Eso pertenece a los muertos», dice. «O a mí».':'Un cobrador con una corona de dedos bloquea el puente. Bajo las tablas, el río susurra el nombre que tenías de niño. «Moneda, sangre o un secreto», grazna.',memory:s=>s.flags.letter?'La cera negra atrae miradas codiciosas.':'El río conoce un nombre que nunca le diste.',choices:[
+      {action:'Pagar el peaje',detail:'Algunas puertas solo se abren con la cantidad justa de monedas.',cost:'−4 oro',effect:{gold:-4},requires:{stat:'gold',min:4,label:'4 de oro'},flag:{bridgePaid:true},note:'Pagaste al guardián. El puente te dejó pasar.'},
+      {action:'Desafiar al guardián',detail:'Su corona de dedos no parece un adorno.',combat:{title:'El guardián del puente',description:'Véncelo para cruzar y obtener 2 monedas.',enemyName:'Guardián del puente',maxHp:9,enemyDamage:2,reward:2,flag:{bridgeThreat:true},note:'Venciste al guardián del puente y cruzaste entre sus dedos dispersos.'},cost:'⚔ Combate por turnos'},
+      {action:'Susurrarle al río',detail:'Entrégale un recuerdo al agua. A cambio, te mostrará cómo cruzar.',cost:'−2 cordura',effect:{sanity:-2},requires:{stat:'sanity',min:6,label:'6 de cordura'},flag:{riverGift:true},note:'El río te llevó a la otra orilla y se quedó con un trozo de tu pasado.'}
+    ]},
+    {chapter:'ACTO I · LA MILLA HUECA',place:'LA CRIPTA DE SANTA ORRA',type:'UNA VELA EN LA OSCURIDAD',title:'Los dientes de la santa',scene:'crypt',copy:s=>s.flags.letter?'La carta palpita débilmente. La puerta de la cripta se abre a su paso. Dentro, un relicario reluce bajo un fresco de la reina llorando lágrimas negras.':'Una cripta se abre bajo un fresco de la reina llorando lágrimas negras. Algo dorado reluce entre los dientes de la santa.',memory:'Aquí enterraron a los muertos mirando en dirección contraria.',choices:[
+      {action:'Saquear el relicario',detail:'El oro siempre sirve, aunque grite.',cost:'+6 oro · −2 cordura',effect:{gold:6,sanity:-2},flag:{relic:true},note:'Arrancaste los dientes de oro de la santa. Castañetearon durante todo el descenso.'},
+      {action:'Sellar el umbral',detail:'Niégales público a los muertos. Llévate el silencio y vete.',cost:'+1 cordura',effect:{sanity:1},flag:{cryptSealed:true},note:'Sellaste la cripta. Algo en su interior te dio las gracias con la voz de tu madre.'},
+      {action:'Beber el incienso negro',detail:'Deja que los muertos te presten su visión.',cost:'−3 vida · +2 cordura',effect:{health:-3,sanity:2},requires:{stat:'sanity',min:5,label:'5 de cordura'},flag:{deathSight:true},note:'Los muertos te mostraron un camino. Ya no recuerdas tu propio rostro.'}
+    ]},
+    {chapter:'ACTO II · LA CONFESIÓN ROJA',place:'LA ALDEA DE LOS CUERVOS',type:'LA DEUDA VENCE',title:'La oferta del inquisidor',scene:'village',copy:s=>s.flags.mercy?'A las puertas de la aldea, la hermana del mensajero te espera con una ballesta. Te vio abandonarlo. Antes de que dispare, un inquisidor ofrece comprarte el silencio.':'A las puertas de la aldea, un inquisidor con máscara de terciopelo ofrece monedas a cambio de un nombre. Tras él, los aldeanos cuelgan del alero de la capilla, balanceándose bajo la lluvia.',memory:'La oferta del inquisidor huele a clavo y sangre añeja.',choices:[
+      {action:'Vender un nombre',detail:'Una vida a cambio de una bolsa. No hace falta decir de quién.',cost:'+5 oro · −1 cordura',effect:{gold:5,sanity:-1},flag:{inquisitorDeal:true},note:'Vendiste un nombre al inquisidor. No preguntó cómo lo conocías.'},
+      {action:'Robarle la bolsa y el ojo',detail:'Un trato brutal. No quedan testigos que debas conservar.',cost:'−2 vida · +4 oro',effect:{health:-2,gold:4},flag:{inquisitorRobbed:true},note:'Dejaste al inquisidor sangrando en el barro. Los cuervos te siguieron.'},
+      {action:'Comprar la libertad de los aldeanos',detail:'Un gesto costoso; quizá lo recuerden.',cost:'−6 oro · +1 cordura',effect:{gold:-6,sanity:1},requires:{stat:'gold',min:6,label:'6 de oro'},flag:{villagersSaved:true},note:'Compraste la libertad de los aldeanos. Te pusieron una llave oxidada en la mano.'}
+    ]},
+    {chapter:'ACTO II · LA CONFESIÓN ROJA',place:'EL BOSQUE NEGRO',type:'UNA ELECCIÓN ENTRE LOS ÁRBOLES',title:'La vieja compañera',scene:'woods',copy:s=>s.flags.villagersSaved?'Una aldeana liberada te guía al bosque negro. Mara, tu antigua compañera, te espera bajo un árbol de ahorcados. «La reina está vacía. Ayúdame a acabar con ella».':'Mara sale del bosque negro. Fue tu compañera y tu escudo. Lleva la espada desenvainada. «La reina está vacía. Ayúdame a acabar con ella».',memory:'Una vez compartisteis manta y campo de batalla. Solo uno conserva el calor.',choices:[
+      {action:'Apoyar a Mara',detail:'La confianza es una hoja. Espera que apunte hacia fuera.',cost:'−1 oro · +1 cordura',effect:{gold:-1,sanity:1},flag:{maraAlly:true},note:'Elegiste a Mara. Te hizo la vieja señal: dos dedos al corazón.'},
+      {action:'Enfrentarte a Mara',detail:'Sin promesas. Sin cabos sueltos.',combat:{title:'Mara, tu antigua compañera',description:'Véncela; dejará caer una bolsa con 3 monedas.',enemyName:'Mara',maxHp:12,enemyDamage:3,reward:3,flag:{maraKilled:true},note:'Venciste a Mara. Cayó sin decir palabra.'},cost:'⚔ Combate por turnos'},
+      {action:'Venderla a la corona',detail:'Para un inquisidor, una vieja amiga vale más viva.',cost:'+6 oro · −2 cordura',effect:{gold:6,sanity:-2},flag:{maraSold:true},note:'Vendiste a Mara. Te sostuvo la mirada mientras se cerraban los grilletes.'}
+    ]},
+    {chapter:'ACTO III · LA CORONA HUNDIDA',place:'LA FORTALEZA SUMERGIDA',type:'UNA PUERTA QUE RESPIRA',title:'Bajo la fortaleza hundida',scene:'keep',copy:s=>s.flags.maraAlly?'Mara encuentra una puerta sumergida bajo la fortaleza. Tras ella, una escalera desciende hacia un latido que hace temblar las piedras.':'La fortaleza hundida emerge del agua negra. Una escalera desciende bajo ella, hacia un latido que hace temblar las piedras.',memory:'El agua trepa por los muros, aunque la marea se ha retirado.',choices:[
+      {action:'Forzar la puerta de hierro',detail:'Fuerza el paso antes de que el agua te deje sin aliento.',cost:'−3 vida',effect:{health:-3},flag:{gateForced:true},note:'Forzaste la puerta. La fortaleza cobró su precio en sangre.'},
+      {action:'Ofrecer la carta de la reina',detail:'Un sello real quizá abra lo que el hierro no puede.',cost:'−1 cordura',effect:{sanity:-1},requires:{flag:'letter',label:'la carta de la reina'},flag:{letterBurned:true},note:'La carta ardió con llamas azules. Algo bajo tus pies susurró: «Al fin».'},
+      {action:'Buscar otra entrada',detail:'Deja que la oscuridad te muestre sus viejas grietas.',cost:'−2 cordura · +2 oro',effect:{sanity:-2,gold:2},flag:{darkRoute:true},note:'Encontraste un pasadizo olvidado. Algo más también te encontró.'}
+    ]},
+    {chapter:'ACTO III · LA CORONA HUNDIDA',place:'EL TRONO SUMERGIDO',type:'EL ÚLTIMO TRATO',title:'Lo que desea la corona',scene:'throne',copy:s=>s.flags.letterBurned?'La reina se sienta bajo las olas, coronada de estrellas ahogadas. El humo de la carta le rodea el cuello como una soga. «Elige en qué viniste a convertirte».':'La reina se sienta bajo las olas, coronada de estrellas ahogadas. Conoce cada camino que recorriste para llegar hasta ella. «Elige en qué viniste a convertirte».',memory:s=>s.flags.maraAlly?'Mara te toma la mano izquierda. «Pase lo que pase, no dejes que se quede con tu nombre».':'Tras el trono, el mar pega su rostro al cristal.',choices:[
+      {action:'Tomar la corona',detail:'Gobierna el reino maldito. Haz tuya su hambre.',cost:'−2 cordura',effect:{sanity:-2},flag:{ending:'crown'},note:'Tomaste la corona. El mar se inclinó, y con él todas las sombras.'},
+      {action:'Romper las estrellas ahogadas',detail:'Haz añicos la corona y deja que la oscuridad antigua se ahogue con ella.',cost:'−2 vida · −1 cordura',effect:{health:-2,sanity:-1},flag:{ending:'break'},note:'Rompiste la corona. Por primera vez en un siglo, cambió la marea.'},
+      {action:'Poner un precio nuevo',detail:'Obliga a la reina a negociar por lo único que no puede poseer.',cost:'−5 oro',effect:{gold:-5},requires:{stat:'gold',min:10,label:'10 de oro'},flag:{ending:'bargain'},note:'Compraste el amanecer de un reino con todas tus monedas.'}
+    ]}
+  ];
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const rollD20 = () => Math.floor(Math.random() * 20) + 1;
+  const rollLabel = roll => roll === 20 ? '¡CRÍTICO! · 20 natural' : roll === 1 ? '¡PIFIA! · 1 natural' : `D20: ${roll}`;
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const currentStory = () => story[state.step];
+  const showToast = message => {
+    const toast = $('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
+  };
+  const setText = (id, value) => { if ($(id)) $(id).textContent = value; };
+  const setHidden = (element, hidden) => element.classList.toggle('hidden', hidden);
+  function updateStats() {
+    setText('goldValue', state.gold);
+    setText('healthValue', `${state.health}/${state.maxHealth}`);
+    setText('sanityValue', state.sanity);
+    const healthMeter = $('healthMeter'), sanityMeter = $('sanityMeter');
+    if (healthMeter) healthMeter.style.width = `${100 * state.health / state.maxHealth}%`;
+    if (sanityMeter) sanityMeter.style.width = `${10 * state.sanity}%`;
+    const char = classes[state.classId];
+    setText('journeyName', char ? `${char.name} · ${char.ability}` : 'Una deuda pagada con sangre');
   }
-  function restart(){state=initial();locked=false;$('modalBackdrop').classList.add('hidden');$('eventCard').classList.remove('advance','right');render()}
-  function showToast(text){const t=$('toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800)}
-  $('restartButton').onclick=restart;$('brandHome').onclick=e=>{e.preventDefault();if(state.step||state.notes.length){if(confirm('Abandon this road and begin again?'))restart()}};
-  $('codexButton').onclick=()=>{$('notesDrawer').classList.add('open');$('notesDrawer').setAttribute('aria-hidden','false')};$('drawerClose').onclick=()=>{$('notesDrawer').classList.remove('open');$('notesDrawer').setAttribute('aria-hidden','true')};
-  $('soundToggle').onclick=()=>{const btn=$('soundToggle');const on=btn.dataset.on!=='true';btn.dataset.on=String(on);btn.querySelector('span').textContent=on?'Sound on':'Sound off';showToast(on?'The road hums beneath your feet.':'The silence returns.')};
-  let touchStart=null;const area=$('eventCard');area.addEventListener('touchstart',e=>{touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY}}, {passive:true});area.addEventListener('touchend',e=>{if(!touchStart)return;const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;touchStart=null;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.25){const button=dx<0?$('choiceLeft'):$('choiceRight');if(!button.disabled)button.click()}},{passive:true});
-  document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'&&!$('choiceLeft').disabled)$('choiceLeft').click();if(e.key==='ArrowRight'&&!$('choiceRight').disabled)$('choiceRight').click();if(e.key==='Escape'){$('notesDrawer').classList.remove('open');$('notesDrawer').setAttribute('aria-hidden','true')}});
-  render();
+  function updateJourney() {
+    const track = $('journeyTrack');
+    if (track) track.innerHTML = story.map((_, i) => `<i class="journey-dot ${i < state.step ? 'done' : ''} ${i === state.step ? 'current' : ''}"></i>`).join('');
+    setText('journeyCount', `${String(Math.min(state.step + 1, story.length)).padStart(2,'0')} <span>/ 08</span>`);
+    const event = currentStory();
+    setText('chapterLabel', event ? event.chapter : 'EPÍLOGO · EL CAMINO RECUERDA');
+    setText('eventNumber', roman[state.step] || '✦');
+  }
+  function renderEvent() {
+    if (state.step >= story.length) return showEnding();
+    const event = currentStory();
+    setText('artLocation', event.place);
+    setText('eventType', event.type);
+    setText('eventTitle', event.title);
+    setText('eventCopy', typeof event.copy === 'function' ? event.copy(state) : event.copy);
+    setText('memoryText', typeof event.memory === 'function' ? event.memory(state) : event.memory);
+    const art = $('cardArt');
+    if (art) art.dataset.scene = event.scene;
+    const row = $('choiceRow');
+    row.innerHTML = '';
+    event.choices.forEach((choice, index) => {
+      const available = canChoose(choice);
+      const lowSanityLock = state.sanity <= 2 && index === event.choices.length - 1 && event.choices.length > 2 && !choice.combat;
+      const button = document.createElement('button');
+      button.className = `choice ${index % 2 ? 'choice-right' : 'choice-left'} ${!available || lowSanityLock ? 'choice-disabled' : ''}`;
+      button.type = 'button';
+      button.disabled = !available || lowSanityLock;
+      button.innerHTML = `<span class="choice-key">${index + 1}</span><span class="choice-body"><span class="choice-action">${escapeHtml(choice.action)}</span><span class="choice-detail">${escapeHtml(lowSanityLock ? 'La cordura se quiebra; ya no puedes considerar esta opción.' : choice.detail)}</span><span class="choice-cost">${escapeHtml(available ? choice.cost : `Requiere ${choice.requires?.label || 'más recursos'}`)}</span></span><span class="choice-arrow">↗</span>`;
+      if (!button.disabled) button.addEventListener('click', () => selectChoice(choice));
+      row.appendChild(button);
+    });
+    updateStats();
+    updateJourney();
+    setText('noteCount', state.notes.length);
+    renderNotes();
+    updateShopButton();
+  }
+  function canChoose(choice) {
+    if (!choice.requires) return true;
+    const requirement = choice.requires;
+    if (requirement.stat) return state[requirement.stat] >= requirement.min;
+    if (requirement.flag) return Boolean(state.flags[requirement.flag]);
+    return true;
+  }
+  function updateShopButton() {
+    const button = $('shopButton');
+    if (!button) return;
+    const open = state.classId && !state.flags.runEnded && state.step < story.length && shopStops.includes(state.step);
+    button.classList.toggle('shop-ready', Boolean(open));
+    button.title = open ? 'Visita programada al mercader' : 'El mercader aparecerá en una parada del camino';
+  }
+  function enterStep() {
+    if (state.health <= 0) return showEnding(true);
+    if (state.step >= story.length) return showEnding();
+    renderEvent();
+    if (shopStops.includes(state.step) && !state.visitedShops.includes(state.step)) openShop(true);
+  }
+  function applyEffect(effect = {}) {
+    if (effect.gold) state.gold = Math.max(0, state.gold + effect.gold);
+    if (effect.health) state.health = clamp(state.health + effect.health, 0, state.maxHealth);
+    if (effect.sanity) state.sanity = clamp(state.sanity + effect.sanity, 0, 10);
+  }
+  function selectChoice(choice) {
+    if (locked || !canChoose(choice)) return;
+    if (choice.combat) return startCombat(choice);
+    locked = true;
+    const roll = rollD20();
+    const critical = roll === 20, fumble = roll === 1;
+    let resultText = `${rollLabel(roll)}. `;
+    if (fumble) {
+      applyEffect({health:-1, gold:-1});
+      resultText += 'La decisión sale mal: pierdes 1 de vida y 1 de oro; no obtienes lo que buscabas.';
+      state.notes.push(`${choice.action}: pifia (1). Perdiste 1 de vida y 1 de oro; la acción fracasó.`);
+    } else {
+      applyEffect(choice.effect);
+      if (critical) {
+        applyEffect({gold:2, health:1, sanity:1});
+        resultText += 'Éxito crítico: además ganas 2 de oro, recuperas 1 de vida y 1 de cordura.';
+      } else {
+        resultText += choice.note || 'La acción tiene éxito.';
+      }
+      if (choice.flag) Object.assign(state.flags, choice.flag);
+      if (choice.note) state.notes.push(choice.note);
+    }
+    setText('rollResult', resultText);
+    showToast(resultText);
+    if (state.health <= 0) return showEnding(true);
+    state.history.push(choice.action);
+    state.step++;
+    locked = false;
+    enterStep();
+  }
+  function itemOwned(item) {
+    if (item.id === 'potion' || item.id === 'tonic') return state.inventory[item.id] >= 3;
+    if (item.id === 'weapon' || item.id === 'weapon2') return state.equipment.damage >= item.damage;
+    if (item.id === 'armor') return state.equipment.armor >= (item.armor || (state.classId === 'caballero' ? 2 : 1));
+    if (item.id === 'relic') return state.relics.includes(item.effect);
+    return false;
+  }
+  function openShop(scheduled = false) {
+    if (!state.classId) return;
+    if (scheduled && !state.visitedShops.includes(state.step)) state.visitedShops.push(state.step);
+    const char = classes[state.classId];
+    setText('shopTitle', scheduled ? `${char.name}: provisiones para el camino` : 'El mercader de los despojos');
+    setText('shopGold', state.gold);
+    const items = shopGoods[state.classId];
+    $('shopItems').innerHTML = items.map((item, index) => {
+      const owned = itemOwned(item), affordable = state.gold >= item.price;
+      return `<article class="shop-item"><div class="shop-item-icon">${item.icon}</div><div class="shop-item-copy"><span class="eyebrow">${escapeHtml(item.type || (item.id.includes('weapon') ? 'ARMA' : item.id === 'armor' ? 'ARMADURA' : 'RELIQUIA'))}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.desc)}</p></div><div class="shop-item-buy"><b>${item.price} ◈</b><button type="button" data-item="${index}" ${owned || !affordable ? 'disabled' : ''}>${owned ? 'ADQUIRIDO' : affordable ? 'COMPRAR' : 'FALTA ORO'}</button></div></article>`;
+    }).join('');
+    $('shopItems').querySelectorAll('[data-item]').forEach(button => button.addEventListener('click', () => buyItem(items[Number(button.dataset.item)])));
+    const equipment = state.equipment.weapon ? `Arma: ${state.equipment.weapon}` : 'Sin arma equipada';
+    const relicText = state.relics.length ? state.relics.map(effect => items.find(i => i.effect === effect)?.name).filter(Boolean).join(', ') : 'ninguna';
+    setText('inventoryText', `Pociones: ${state.inventory.potion} · Tónicos: ${state.inventory.tonic} · ${equipment} · Reliquias: ${relicText}`);
+    setHidden($('shopBackdrop'), false);
+    updateStats();
+  }
+  function closeShop() {
+    setHidden($('shopBackdrop'), true);
+    updateShopButton();
+  }
+  function buyItem(item) {
+    if (!item || state.gold < item.price || itemOwned(item)) return;
+    state.gold -= item.price;
+    if (item.id === 'potion' || item.id === 'tonic') state.inventory[item.id]++;
+    if (item.damage) { state.equipment.weapon = item.name; state.equipment.damage = item.damage; }
+    if (item.id === 'armor') state.equipment.armor = state.classId === 'caballero' ? 2 : 1;
+    if (item.effect) {
+      state.relics.push(item.effect);
+      if (item.effect === 'maxHealth') { state.maxHealth += 2; state.health = Math.min(state.maxHealth, state.health + 2); }
+    }
+    showToast(`${item.name} adquirido.`);
+    openShop(false);
+  }
+  function startCombat(choice) {
+    const enemy = choice.combat;
+    combat = {choice, hp:enemy.maxHp, maxHp:enemy.maxHp, guarding:false, abilityUsed:false, firstStrike:true, turn:0};
+    setText('combatTitle', enemy.title);
+    setText('combatDescription', enemy.description);
+    setText('combatLog', `${enemy.enemyName} te cierra el paso. ¿Qué harás?`);
+    setHidden($('combatBackdrop'), false);
+    updateCombat();
+  }
+  function updateCombat() {
+    if (!combat) return;
+    setText('combatPlayerValue', `${state.health} / ${state.maxHealth}`);
+    setText('combatEnemyValue', `${combat.hp} / ${combat.maxHp}`);
+    $('combatPlayerMeter').style.width = `${100 * state.health / state.maxHealth}%`;
+    $('combatEnemyMeter').style.width = `${100 * combat.hp / combat.maxHp}%`;
+    $('combatPotionButton').disabled = locked || state.inventory.potion < 1 || state.health >= state.maxHealth;
+    $('attackButton').disabled = locked;
+    $('abilityButton').disabled = locked || combat.abilityUsed || (state.classId === 'mago' && state.sanity < 1);
+    $('abilityButton').textContent = classes[state.classId].ability.toLocaleUpperCase('es');
+    $('guardButton').disabled = locked;
+    $('fleeButton').disabled = locked;
+  }
+  function playerAction(action) {
+    if (!combat || locked) return;
+    if (action === 'ability' && combat.abilityUsed) return;
+    if (action === 'ability' && state.classId === 'mago' && state.sanity < 1) return showToast('No tienes cordura suficiente para lanzar el hechizo.');
+    if (action === 'potion' && (state.inventory.potion < 1 || state.health >= state.maxHealth)) return;
+    locked = true;
+    const roll = rollD20(), critical = roll === 20, fumble = roll === 1;
+    const id = state.classId;
+    let message = `${rollLabel(roll)}. `;
+
+    if (action === 'flee') {
+      if (!fumble) {
+        if (critical) { state.gold++; message += 'Retirada perfecta: encuentras 1 oro al escapar.'; }
+        else message += 'Te retiras del combate. La elección queda abierta.';
+        setText('combatLog', message);
+        updateStats();
+        setHidden($('combatBackdrop'), true);
+        combat = null;
+        locked = false;
+        showToast(message);
+        return;
+      }
+      message += 'La huida falla y recibes 1 de daño adicional. ';
+    } else if (fumble) {
+      if (action === 'potion') {
+        state.inventory.potion--;
+        message += 'La poción se rompe sin surtir efecto. ';
+      } else {
+        message += 'La acción falla; recibes 1 de daño adicional. ';
+      }
+    } else if (action === 'attack') {
+      let damage = state.equipment.damage || classes[id].damage;
+      if (id === 'asesino' && combat.firstStrike) { damage += 2; combat.firstStrike = false; message += 'Ataque furtivo. '; }
+      if (critical) damage *= 2;
+      combat.hp = Math.max(0, combat.hp - damage);
+      message += `${critical ? 'Daño máximo: ' : ''}infliges ${damage} de daño. `;
+    } else if (action === 'ability') {
+      if (id === 'caballero') {
+        const healing = critical ? 4 : 2;
+        state.health = Math.min(state.maxHealth, state.health + healing);
+        combat.guarding = true;
+        message += `Recuperas hasta ${healing} de vida y preparas la defensa. `;
+      } else {
+        if (id === 'mago') state.sanity--;
+        const damage = critical ? 8 : 4;
+        combat.hp = Math.max(0, combat.hp - damage);
+        message += `${critical ? 'Poder crítico: ' : ''}infliges ${damage} de daño con ${classes[id].ability.toLocaleLowerCase('es')}. `;
+      }
+      combat.abilityUsed = true;
+    } else if (action === 'guard') {
+      combat.guarding = true;
+      message += critical ? 'Defensa perfecta: reduces en 4 el próximo golpe. ' : 'Te preparas para recibir el golpe. ';
+    } else if (action === 'potion') {
+      state.inventory.potion--;
+      const healing = critical ? 5 : 3;
+      state.health = Math.min(state.maxHealth, state.health + healing);
+      message += `La poción te devuelve hasta ${healing} de vida. `;
+    }
+
+    if (fumble) state.health = Math.max(0, state.health - 1);
+    if (combat.hp <= 0) {
+      setText('combatLog', `${message} ${combat.choice.combat.enemyName} cae.`);
+      return finishCombat(true);
+    }
+    const reduction = combat.guarding ? (critical && action === 'guard' ? 4 : 2) : 0;
+    combat.guarding = false;
+    const enemyDamage = Math.max(0, (combat.choice.combat.enemyDamage || 2) - state.equipment.armor - reduction);
+    state.health = Math.max(0, state.health - enemyDamage);
+    combat.turn++;
+    setText('combatLog', `${message}${combat.choice.combat.enemyName} te inflige ${enemyDamage} de daño.`);
+    updateStats();
+    if (state.health <= 0) return finishCombat(false);
+    locked = false;
+    updateCombat();
+  }
+  function finishCombat(victory) {
+    const choice = combat.choice, enemy = choice.combat;
+    if (victory) {
+      state.gold += enemy.reward || 0;
+      if (state.relics.includes('combatGold')) state.gold += 2;
+      if (state.relics.includes('combatHeal')) state.health = Math.min(state.maxHealth, state.health + 2);
+      if (choice.flag) Object.assign(state.flags, choice.flag);
+      if (choice.note) state.notes.push(choice.note);
+      setText('combatLog', `${enemy.enemyName} cae. Obtienes ${enemy.reward || 0} de oro.`);
+      state.history.push(choice.action);
+      state.step++;
+      setTimeout(() => {
+        setHidden($('combatBackdrop'), true);
+        combat = null;
+        locked = false;
+        enterStep();
+      }, 800);
+    } else {
+      setText('combatLog', 'Caes bajo el último golpe. El camino termina aquí.');
+      setTimeout(() => {
+        setHidden($('combatBackdrop'), true);
+        combat = null;
+        locked = false;
+        showEnding(true);
+      }, 800);
+    }
+  }
+  function showEnding(death = false) {
+    // Preserve the story ending while marking the run complete.
+    const endingFlag = state.flags.ending;
+    state.flags.runEnded = true;
+    setText('modalTitle', death ? 'Una vida malgastada' : endingFlag === 'crown' ? 'La reina de las profundidades' : endingFlag === 'break' ? 'La marea cambia' : endingFlag === 'bargain' ? 'El precio del amanecer' : 'El camino se cierra');
+    setText('modalCopy', death ? 'Tu peregrinaje termina bajo la lluvia. El reino seguirá cobrando su deuda.' : endingFlag === 'crown' ? 'Tomaste el trono y heredaste un reino que solo sabe obedecer al hambre. Tu nombre se convirtió en una nueva maldición.' : endingFlag === 'break' ? 'La corona se hizo añicos. Bajo un cielo sin estrellas, las aguas retrocedieron y los supervivientes vieron el amanecer.' : endingFlag === 'bargain' ? 'La reina aceptó tu precio. La campana volvió a sonar, esta vez para anunciar que el reino aún podía elegir.' : 'El reino te recuerda, aunque no como esperabas.');
+    setText('endingSummary', `${classes[state.classId]?.name || ''} · ${state.gold} de oro · ${state.health}/${state.maxHealth} de vida · ${state.sanity} de cordura · ${state.notes.length} recuerdos`);
+    setHidden($('modalBackdrop'), false);
+  }
+  function renderNotes() {
+    const list = $('notesList');
+    if (list) list.innerHTML = state.notes.length ? state.notes.map((note, i) => `<article class="note-entry"><span class="eyebrow">RECUERDO ${String(i + 1).padStart(2,'0')}</span><p>${escapeHtml(note)}</p></article>`).join('') : '<p class="empty-notes">Aún no has dejado huella en el camino.</p>';
+  }
+  function resetRun() {
+    state = initial(); combat = null; locked = false;
+    setHidden($('modalBackdrop'), true);
+    setHidden($('shopBackdrop'), true);
+    setHidden($('combatBackdrop'), true);
+    setHidden($('classBackdrop'), false);
+    $('gameShell').classList.add('awaiting-class');
+    renderClassOptions();
+  }
+  function renderClassOptions() {
+    $('classOptions').innerHTML = Object.entries(classes).map(([id, char]) => `<button class="class-option" data-class="${id}"><span class="class-icon">${char.icon}</span><span class="eyebrow">${escapeHtml(char.aliases)}</span><h2>${char.name}</h2><p>${char.abilityText}</p><span class="class-stats">VIDA ${char.hp} · CORDURA ${char.sanity} · ORO ${char.gold}</span><b class="class-select">ELEGIR CLASE ↗</b></button>`).join('');
+    $('classOptions').querySelectorAll('[data-class]').forEach(button => button.addEventListener('click', () => chooseClass(button.dataset.class)));
+  }
+  function chooseClass(id) {
+    const char = classes[id];
+    if (!char) return;
+    state.classId = id; state.health = state.maxHealth = char.hp; state.sanity = char.sanity; state.gold = char.gold;
+    $('gameShell').classList.remove('awaiting-class');
+    setHidden($('classBackdrop'), true);
+    enterStep();
+  }
+  $('shopButton').addEventListener('click', () => {
+    if (state.classId && shopStops.includes(state.step) && state.step < story.length) openShop(!state.visitedShops.includes(state.step));
+    else {
+      const nextStop = shopStops.find(step => step > state.step);
+      showToast(`Próxima parada de mercado: ${nextStop === undefined ? 'ninguna' : `capítulo ${nextStop + 1}`}.`);
+    }
+  });
+  $('shopClose').addEventListener('click', closeShop);
+  $('shopBackdrop').addEventListener('click', event => { if (event.target === $('shopBackdrop')) closeShop(); });
+  $('attackButton').addEventListener('click', () => playerAction('attack'));
+  $('abilityButton').addEventListener('click', () => playerAction('ability'));
+  $('guardButton').addEventListener('click', () => playerAction('guard'));
+  $('combatPotionButton').addEventListener('click', () => playerAction('potion'));
+  $('fleeButton').addEventListener('click', () => playerAction('flee'));
+  $('restartButton').addEventListener('click', resetRun);
+  $('brandHome').addEventListener('click', event => { event.preventDefault(); resetRun(); });
+  $('codexButton').addEventListener('click', () => { $('notesDrawer').classList.add('open'); $('notesDrawer').setAttribute('aria-hidden','false'); renderNotes(); });
+  $('drawerClose').addEventListener('click', () => { $('notesDrawer').classList.remove('open'); $('notesDrawer').setAttribute('aria-hidden','true'); });
+  $('classOptions').addEventListener('click', event => { if (event.target === $('classOptions')) return; });
+  $('combatBackdrop').addEventListener('click', event => { if (event.target === $('combatBackdrop')) showToast('El combate no permite apartar la mirada.'); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      if (!$('shopBackdrop').classList.contains('hidden')) closeShop();
+      else if ($('notesDrawer').classList.contains('open')) $('drawerClose').click();
+    }
+    if (!$('combatBackdrop').classList.contains('hidden')) {
+      if (event.key === '1') playerAction('attack');
+      if (event.key === '2') playerAction('guard');
+      if (event.key === '3') playerAction('potion');
+      if (event.key === '4') playerAction('flee');
+    }
+  });
+  renderClassOptions();
+  renderEvent();
 })();
